@@ -1,0 +1,27 @@
+{
+    "name": "buuum/mail",
+    "type": "library",
+    "description": "",
+    "homepage": "https://github.com/buuum/Mail",
+    "keywords": [
+        "mail"
+    ],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Alfons Martinez",
+            "email": "alfonsmartinezparra@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Buuum\\": "src/Mail"
+        }
+    },
+    "require": {
+        "phpmailer/phpmailer": "^5.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "*"
+    }
+}
