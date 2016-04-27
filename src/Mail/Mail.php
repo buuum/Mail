@@ -5,14 +5,36 @@ namespace Buuum;
 class Mail
 {
 
+    /**
+     * @var string
+     */
     private $to = '';
+    /**
+     * @var array
+     */
     private $tobcc = [];
+    /**
+     * @var string
+     */
     private $asunto = '';
+    /**
+     * @var string
+     */
     private $body = '';
+    /**
+     * @var array
+     */
     private $from = [];
+    /**
+     * @var array
+     */
     private $response = [];
 
 
+    /**
+     * Mail constructor.
+     * @param array $options
+     */
     public function __construct(array $options)
     {
         $this->mail = new \PHPMailer(true);
@@ -30,7 +52,11 @@ class Mail
 
     }
 
-    public function setConfig($options)
+    /**
+     * @param array $options
+     * @return array
+     */
+    public function setConfig(array $options)
     {
         $default = [
             'smtpsecure' => '',
@@ -48,6 +74,11 @@ class Mail
 
     }
 
+    /**
+     * @return bool
+     * @throws \Exception
+     * @throws \phpmailerException
+     */
     public function send()
     {
 
@@ -85,54 +116,92 @@ class Mail
         return $salida;
     }
 
+    /**
+     * @param $asunto
+     * @return $this
+     */
     public function subject($asunto)
     {
         $this->asunto = $asunto;
         return $this;
     }
 
+    /**
+     * @param $body
+     * @return $this
+     */
     public function body($body)
     {
         $this->body = $body;
         return $this;
     }
 
+    /**
+     * @param $email
+     * @return $this
+     */
     public function to($email)
     {
         $this->to = $email;
         return $this;
     }
 
-    public function tobcc($emails_array)
+    /**
+     * @param array $emails_array
+     * @return $this
+     */
+    public function tobcc(array $emails_array)
     {
         $this->tobcc = $emails_array;
         return $this;
     }
 
+    /**
+     * @param $email
+     * @param string $nombre
+     * @return $this
+     */
     public function response($email, $nombre = '')
     {
         $this->response = array($email, $nombre);
         return $this;
     }
 
+    /**
+     * @param $email
+     * @param $nombre
+     * @return $this
+     */
     public function from($email, $nombre)
     {
         $this->from = array($email, $nombre);
         return $this;
     }
 
+    /**
+     * @param $file
+     * @param $nameattachment
+     * @return $this
+     * @throws \phpmailerException
+     */
     public function AddAttachment($file, $nameattachment)
     {
         $this->mail->AddAttachment($file, $nameattachment);
         return $this;
     }
 
+    /**
+     * Remove addresses and attachments
+     */
     public function ClearAddresses()
     {
         $this->mail->clearAddresses();
         $this->mail->clearAttachments();
     }
 
+    /**
+     * Close smpt connection
+     */
     public function smtpClose()
     {
         $this->mail->smtpClose();
