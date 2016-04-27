@@ -34,7 +34,7 @@ $mail = new \Buuum\Mail([
 $mail->from('emailsender@myhost.com', 'My Host')
     ->response('responsemail@myhost.com', 'My Host')
     ->to('emailreciver@gmail.com')
-    ->asunto('Subject mail')
+    ->subject('Subject mail')
     ->body('<h1>Mail message</h1>')
     ->tobcc(['email1@example.com', 'email2@example.com'])
     ->AddAttachment(__DIR__.'/i.jpg', 'imagen.jpg')
