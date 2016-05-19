@@ -22,16 +22,18 @@ You may use your own autoloader as long as it follows PSR-0 or PSR-4 standards. 
 ## Initialize
 
 ```
-$mail = new \Buuum\Mail([
+Mail::setConfig([
     'host'       => "myhost.com",
     'username'   => "myuser@host.com",
-    'password'   => "mypass"
+    'password'   => "mypass",
+    'from'       => 'emailsender@myhost.com', 'My Host',
+    'response'   => 'emailsender@myhost.com', 'My Host'
 ]);
 ```
 
 ##  Send Mails
 ```
-$mail->from('emailsender@myhost.com', 'My Host')
+Mail::from('emailsender@myhost.com', 'My Host')
     ->response('responsemail@myhost.com', 'My Host')
     ->to('emailreciver@gmail.com')
     ->subject('Subject mail')
@@ -50,10 +52,9 @@ $mails = [
     'email3@example.com'
 ];
 
-$mail->subject('subject mail')
-->body('message body');
+Mail::subject('subject mail')->body('message body');
 
 foreach($mails as $mail){
-    $mail->to($mail)->send();
+    Mail::to($mail)->send();
 }
 ```

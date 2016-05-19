@@ -31,33 +31,21 @@ class Mail
     private $response = [];
 
 
-    /**
-     * Mail constructor.
-     * @param array $options
-     */
-    public function __construct(array $options)
+    private static $instance;
+
+    public function __construct()
     {
         $this->mail = new \PHPMailer(true);
         $this->mail->IsSMTP();
         $this->mail->SMTPAuth = true;
         $this->mail->SMTPKeepAlive = true;
 
-        $options = $this->setConfig($options);
-
-        $this->mail->SMTPSecure = $options['smtpsecure'];
-        $this->mail->Port = $options['port'];
-        $this->mail->Host = $options['host'];
-        $this->mail->Username = $options['username'];
-        $this->mail->Password = $options['password'];
-
     }
 
-    /**
-     * @param array $options
-     * @return array
-     */
-    public function setConfig(array $options)
+    public static function setConfig(array $options)
     {
+        $myself = self::getInstance();
+
         $default = [
             'smtpsecure' => '',
             // set the SMTP server port 25, 465 or 587
@@ -67,10 +55,22 @@ class Mail
             // SMTP server username
             'username'   => '',
             // SMTP server pass
-            'password'   => ''
+            'password'   => '',
+            // FROM
+            'from'       => [],
+            // RESPONSE
+            'response'   => []
         ];
 
-        return array_merge($default, $options);
+        $options = array_merge($default, $options);
+
+        $myself->mail->SMTPSecure = $options['smtpsecure'];
+        $myself->mail->Port = $options['port'];
+        $myself->mail->Host = $options['host'];
+        $myself->mail->Username = $options['username'];
+        $myself->mail->Password = $options['password'];
+        $myself->from = $options['from'];
+        $myself->response = $options['response'];
 
     }
 
@@ -79,81 +79,83 @@ class Mail
      * @throws \Exception
      * @throws \phpmailerException
      */
-    public function send()
+    public static function send()
     {
 
-        if (empty($this->from)) {
+        $myself = self::getInstance();
+
+        if (empty($myself->from)) {
             throw new \Exception('Response can not be empty');
         }
 
-        if (empty($this->response)) {
-            $this->response = $this->from;
+        if (empty($myself->response)) {
+            $myself->response = $myself->from;
         }
 
-        $this->mail->AddReplyTo($this->response[0], $this->response[1]);
+        $myself->mail->AddReplyTo($myself->response[0], $myself->response[1]);
 
-        $this->mail->From = $this->from[0];
-        $this->mail->FromName = $this->from[1];
+        $myself->mail->From = $myself->from[0];
+        $myself->mail->FromName = $myself->from[1];
 
-        $this->mail->AddAddress($this->to);
+        $myself->mail->AddAddress($myself->to);
 
-        if (!empty($this->tobcc)) {
-            foreach ($this->tobcc as $m) {
-                $this->mail->addBCC($m);
+        if (!empty($myself->tobcc)) {
+            foreach ($myself->tobcc as $m) {
+                $myself->mail->addBCC($m);
             }
         }
 
-        $this->mail->Subject = $this->asunto;
+        $myself->mail->Subject = $myself->asunto;
 
-        $body = $this->body;
+        $body = $myself->body;
 
-        $this->mail->MsgHTML($body);
+        $myself->mail->MsgHTML($body);
 
-        $salida = $this->mail->Send();
+        $salida = $myself->mail->Send();
 
-        $this->ClearAddresses();
+        $myself->ClearAddresses();
 
         return $salida;
     }
 
-    /**
-     * @param $asunto
-     * @return $this
-     */
-    public function subject($asunto)
+    public static function subject($asunto)
     {
-        $this->asunto = $asunto;
-        return $this;
+        $myself = self::getInstance();
+        $myself->asunto = $asunto;
+        return $myself;
     }
 
     /**
      * @param $body
      * @return $this
      */
-    public function body($body)
+    public static function body($body)
     {
-        $this->body = $body;
-        return $this;
+        $myself = self::getInstance();
+        $myself->body = $body;
+        return $myself;
     }
 
     /**
      * @param $email
      * @return $this
      */
-    public function to($email)
+    public static function to($email)
     {
-        $this->to = $email;
-        return $this;
+        $myself = self::getInstance();
+        $myself->to = $email;
+        return $myself;
     }
 
     /**
      * @param array $emails_array
      * @return $this
      */
-    public function tobcc(array $emails_array)
+    public static function tobcc(array $emails_array)
     {
-        $this->tobcc = $emails_array;
-        return $this;
+        $myself = self::getInstance();
+        $myself->tobcc = $emails_array;
+        return $myself;
     }
 
     /**
@@ -161,10 +163,11 @@ class Mail
      * @param string $nombre
      * @return $this
      */
-    public function response($email, $nombre = '')
+    public static function response($email, $nombre = '')
     {
-        $this->response = array($email, $nombre);
-        return $this;
+        $myself = self::getInstance();
+        $myself->response = [$email, $nombre];
+        return $myself;
     }
 
     /**
@@ -172,10 +175,11 @@ class Mail
      * @param $nombre
      * @return $this
      */
-    public function from($email, $nombre)
+    public static function from($email, $nombre)
     {
-        $this->from = array($email, $nombre);
-        return $this;
+        $myself = self::getInstance();
+        $myself->from = [$email, $nombre];
+        return $myself;
     }
 
     /**
@@ -184,19 +188,21 @@ class Mail
      * @return $this
      * @throws \phpmailerException
      */
-    public function AddAttachment($file, $nameattachment)
+    public static function AddAttachment($file, $nameattachment)
     {
-        $this->mail->AddAttachment($file, $nameattachment);
-        return $this;
+        $myself = self::getInstance();
+        $myself->mail->AddAttachment($file, $nameattachment);
+        return $myself;
     }
 
     /**
      * Remove addresses and attachments
      */
-    public function ClearAddresses()
+    public static function ClearAddresses()
     {
-        $this->mail->clearAddresses();
-        $this->mail->clearAttachments();
+        $myself = self::getInstance();
+        $myself->mail->clearAddresses();
+        $myself->mail->clearAttachments();
     }
 
     /**
@@ -205,6 +211,16 @@ class Mail
     public function smtpClose()
     {
         $this->mail->smtpClose();
+    }
+
+    public static function getInstance()
+    {
+
+        if (!isset(self::$instance)) {
+            self::$instance = new self;
+        }
+
+        return self::$instance;
     }
 
 }
