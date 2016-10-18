@@ -19,7 +19,8 @@
         }
     },
     "require": {
-        "phpmailer/phpmailer": "^5.2"
+        "phpmailer/phpmailer": "^5.2",
+        "swiftmailer/swiftmailer": "@stable"
     },
     "require-dev": {
         "phpunit/phpunit": "*"

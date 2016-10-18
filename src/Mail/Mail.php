@@ -2,6 +2,10 @@
 
 namespace Buuum;
 
+use Buuum\MailerInterface;
+use Buuum\MailerHandler\SwiftMailerHandler;
+use Buuum\MailerHandler\PHPMailerHandler;
+
 class Mail
 {
 
@@ -29,49 +33,43 @@ class Mail
      * @var array
      */
     private $response = [];
-
+    /**
+     * @var MailerInterface
+     */
+    private $mailer;
 
     private static $instance;
 
-    public function __construct()
-    {
-        $this->mail = new \PHPMailer(true);
-        $this->mail->IsSMTP();
-        $this->mail->SMTPAuth = true;
-        $this->mail->SMTPKeepAlive = true;
-
+    public function __construct ( MailerInterface $mailer ) {
+        $this->mailer = $mailer;
     }
 
     public static function setConfig(array $options)
     {
-        $myself = self::getInstance();
-
-        $default = [
-            'smtpsecure' => '',
-            // set the SMTP server port 25, 465 or 587
-            'port'       => 25,
-            // SMTP server
-            'host'       => '',
-            // SMTP server username
-            'username'   => '',
-            // SMTP server pass
-            'password'   => '',
-            // FROM
-            'from'       => [],
-            // RESPONSE
-            'response'   => []
+        $required = [
+            'host', 'username', 'port', 'password',
+            'smtpsecure', 'from', 'response',
+            'mailer'
         ];
-
-        $options = array_merge($default, $options);
-
-        $myself->mail->SMTPSecure = $options['smtpsecure'];
-        $myself->mail->Port = $options['port'];
-        $myself->mail->Host = $options['host'];
-        $myself->mail->Username = $options['username'];
-        $myself->mail->Password = $options['password'];
-        $myself->from = $options['from'];
+        if(count(array_intersect_key(array_flip($required), $options)) < count($required)) {
+            throw new \InvalidArgumentException( 'Insuficient transport config params.' );
+        }
+        $myself = self::getInstance($options['mailer']);
+        $myself->mailer->setConfig( $options );
         $myself->response = $options['response'];
-
+        $myself->from = $options['from'];
+    }
+    /**
+     * @return bool
+     * @param $directoryPath
+     * @throws \Exception
+     * @throws \siwftMailerException
+     */
+    public function spool ( $directoryPath ) {
+        $myself = self::getInstance();
+        return $myself->mailer->spool( $myself->asunto, $myself->from,
+                                      $myself->response, $myself->to,
+                                      $myself->body, $directoryPath );
     }
 
     /**
@@ -81,41 +79,23 @@ class Mail
      */
     public static function send()
     {
-
         $myself = self::getInstance();
-
         if (empty($myself->from)) {
-            throw new \Exception('Response can not be empty');
+            throw new \Exception('From field can not be empty');
         }
-
         if (empty($myself->response)) {
             $myself->response = $myself->from;
         }
-
-        $myself->mail->AddReplyTo($myself->response[0], $myself->response[1]);
-
-        $myself->mail->From = $myself->from[0];
-        $myself->mail->FromName = $myself->from[1];
-
-        $myself->mail->AddAddress($myself->to);
-
         if (!empty($myself->tobcc)) {
-            foreach ($myself->tobcc as $m) {
-                $myself->mail->addBCC($m);
-            }
+            $myself->mailer->setBcc( $myself->tobcc );
         }
-
-        $myself->mail->Subject = $myself->asunto;
-
-        $body = $myself->body;
-
-        $myself->mail->MsgHTML($body);
-
-        $salida = $myself->mail->Send();
-
-        $myself->ClearAddresses();
-
-        return $salida;
+        $replyTo = false;
+        if (!empty($myself->response) ) {
+            $replyTo = $myself->response;
+        }
+        return $myself->mailer->send($myself->asunto, $myself->from,
+                                        $myself->response, $myself->to,
+                                        $myself->body );
     }
 
     public static function subject($asunto)
@@ -183,43 +163,42 @@ class Mail
     }
 
     /**
-     * @param $file
-     * @param $nameattachment
+     * @param $filePathOrUrl
+     * @param $attachmentName
      * @return $this
      * @throws \phpmailerException
      */
-    public static function AddAttachment($file, $nameattachment)
+    public static function addAttachment($filePathOrUrl, $attachmentName)
     {
         $myself = self::getInstance();
-        $myself->mail->AddAttachment($file, $nameattachment);
+        $myself->mailer->addAttachment($filePathOrUrl, $attachmentName);
         return $myself;
     }
 
     /**
-     * Remove addresses and attachments
+     * @param $mailerName this is the library that you will use, it can be SwiftMailer or PhpMailer
+     * @return SwiftMailerHandler | PHPMailerHandler
      */
-    public static function ClearAddresses()
+    public static function getMailerInstance ( $mailerName=false )
     {
-        $myself = self::getInstance();
-        $myself->mail->clearAddresses();
-        $myself->mail->clearAttachments();
+        if (!isset(self::$mailer)) {
+            if ( $mailerName && strtolower($mailerName) == 'swift' ){
+                return new SwiftMailerHandler;
+            }
+            return new PHPMailerHandler;
+        }
+        return self::$mailer;
     }
 
     /**
-     * Close smpt connection
+     * @param $mailerName the library to use can be SwiftMailer or PhpMailer
+     * @return $this
      */
-    public function smtpClose()
+    public static function getInstance($mailerName=false)
     {
-        $this->mail->smtpClose();
-    }
-
-    public static function getInstance()
-    {
-
         if (!isset(self::$instance)) {
-            self::$instance = new self;
+            self::$instance = new self( self::getMailerInstance( $mailerName ) );
         }
-
         return self::$instance;
     }
 
