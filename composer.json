@@ -19,9 +19,12 @@
         }
     },
     "require": {
-        "phpmailer/phpmailer": "^5.2"
+        "swiftmailer/swiftmailer": "^5.4"
     },
     "require-dev": {
         "phpunit/phpunit": "*"
+    },
+    "suggest" : {
+        "phpmailer/phpmailer": "PhpMailer mail class"
     }
 }

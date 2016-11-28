@@ -6,156 +6,68 @@ class Mail
 {
 
     /**
-     * @var string
+     * @var Mail
      */
-    private $to = '';
-    /**
-     * @var array
-     */
-    private $tobcc = [];
-    /**
-     * @var string
-     */
-    private $asunto = '';
-    /**
-     * @var string
-     */
-    private $body = '';
-    /**
-     * @var array
-     */
-    private $from = [];
-    /**
-     * @var array
-     */
-    private $response = [];
-
-
     private static $instance;
+    /**
+     * @var MailHandlerInterface
+     */
+    protected $handler;
 
-    public function __construct()
+    /**
+     * @param $handler
+     */
+    public function setHandler(MailHandlerInterface $handler)
     {
-        $this->mail = new \PHPMailer(true);
-        $this->mail->IsSMTP();
-        $this->mail->SMTPAuth = true;
-        $this->mail->SMTPKeepAlive = true;
-
-    }
-
-    public static function setConfig(array $options)
-    {
-        $myself = self::getInstance();
-
-        $default = [
-            'smtpsecure' => '',
-            // set the SMTP server port 25, 465 or 587
-            'port'       => 25,
-            // SMTP server
-            'host'       => '',
-            // SMTP server username
-            'username'   => '',
-            // SMTP server pass
-            'password'   => '',
-            // FROM
-            'from'       => [],
-            // RESPONSE
-            'response'   => []
-        ];
-
-        $options = array_merge($default, $options);
-
-        $myself->mail->SMTPSecure = $options['smtpsecure'];
-        $myself->mail->Port = $options['port'];
-        $myself->mail->Host = $options['host'];
-        $myself->mail->Username = $options['username'];
-        $myself->mail->Password = $options['password'];
-        $myself->from = $options['from'];
-        $myself->response = $options['response'];
-
+        $this->handler = $handler;
     }
 
     /**
-     * @return bool
-     * @throws \Exception
-     * @throws \phpmailerException
+     * @param bool $immediately
      */
-    public static function send()
+    public function send($immediately = true)
     {
-
-        $myself = self::getInstance();
-
-        if (empty($myself->from)) {
-            throw new \Exception('Response can not be empty');
-        }
-
-        if (empty($myself->response)) {
-            $myself->response = $myself->from;
-        }
-
-        $myself->mail->AddReplyTo($myself->response[0], $myself->response[1]);
-
-        $myself->mail->From = $myself->from[0];
-        $myself->mail->FromName = $myself->from[1];
-
-        $myself->mail->AddAddress($myself->to);
-
-        if (!empty($myself->tobcc)) {
-            foreach ($myself->tobcc as $m) {
-                $myself->mail->addBCC($m);
-            }
-        }
-
-        $myself->mail->Subject = $myself->asunto;
-
-        $body = $myself->body;
-
-        $myself->mail->MsgHTML($body);
-
-        $salida = $myself->mail->Send();
-
-        $myself->ClearAddresses();
-
-        return $salida;
+        $this->handler->send($immediately);
     }
 
-    public static function subject($asunto)
+    /**
+     * @param $asunto
+     * @return $this
+     */
+    public function subject($asunto)
     {
-        $myself = self::getInstance();
-        $myself->asunto = $asunto;
-        return $myself;
+        $this->handler->subject($asunto);
+        return $this;
     }
 
     /**
      * @param $body
      * @return $this
      */
-    public static function body($body)
+    public function body($body)
     {
-        $myself = self::getInstance();
-        $myself->body = $body;
-        return $myself;
+        $this->handler->body($body);
+        return $this;
     }
 
     /**
      * @param $email
      * @return $this
      */
-    public static function to($email)
+    public function to($email)
     {
-        $myself = self::getInstance();
-        $myself->to = $email;
-        return $myself;
+        $this->handler->to($email);
+        return $this;
     }
 
     /**
      * @param array $emails_array
      * @return $this
      */
-    public static function tobcc(array $emails_array)
+    public function tobcc(array $emails_array)
     {
-        $myself = self::getInstance();
-        $myself->tobcc = $emails_array;
-        return $myself;
+        $this->handler->tobcc($emails_array);
+        return $this;
     }
 
     /**
@@ -163,11 +75,10 @@ class Mail
      * @param string $nombre
      * @return $this
      */
-    public static function response($email, $nombre = '')
+    public function response($email, $nombre = '')
     {
-        $myself = self::getInstance();
-        $myself->response = [$email, $nombre];
-        return $myself;
+        $this->handler->response($email, $nombre);
+        return $this;
     }
 
     /**
@@ -175,11 +86,10 @@ class Mail
      * @param $nombre
      * @return $this
      */
-    public static function from($email, $nombre)
+    public function from($email, $nombre)
     {
-        $myself = self::getInstance();
-        $myself->from = [$email, $nombre];
-        return $myself;
+        $this->handler->from($email, $nombre);
+        return $this;
     }
 
     /**
@@ -188,38 +98,28 @@ class Mail
      * @return $this
      * @throws \phpmailerException
      */
-    public static function AddAttachment($file, $nameattachment)
+    public function AddAttachment($file, $nameattachment)
     {
-        $myself = self::getInstance();
-        $myself->mail->AddAttachment($file, $nameattachment);
-        return $myself;
-    }
-
-    /**
-     * Remove addresses and attachments
-     */
-    public static function ClearAddresses()
-    {
-        $myself = self::getInstance();
-        $myself->mail->clearAddresses();
-        $myself->mail->clearAttachments();
+        $this->handler->AddAttachment($file, $nameattachment);
+        return $this;
     }
 
     /**
      * Close smpt connection
      */
-    public function smtpClose()
+    public function close()
     {
-        $this->mail->smtpClose();
+        $this->handler->close();
     }
 
+    /**
+     * @return Mail
+     */
     public static function getInstance()
     {
-
         if (!isset(self::$instance)) {
             self::$instance = new self;
         }
-
         return self::$instance;
     }
 

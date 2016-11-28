@@ -21,40 +21,74 @@ You may use your own autoloader as long as it follows PSR-0 or PSR-4 standards. 
 
 ## Initialize
 
-```
-Mail::setConfig([
-    'host'       => "myhost.com",
-    'username'   => "myuser@host.com",
-    'password'   => "mypass",
-    'from'       => 'emailsender@myhost.com', 'My Host',
-    'response'   => 'emailsender@myhost.com', 'My Host'
-]);
+```php
+
+use Buuum\Mail;
+use Buuum\MailerHandler\SwiftMailerHandler;
+use Buuum\MailerHandler\PhpMailerHandler;
+
+$config = [
+    'smtpsecure'      => 'tls',
+    'host'            => "smtp.host.com",
+    'username'        => "host_username",
+    'password'        => "host_password",
+    'port'            => 25,
+    'from'            => ['from@host.com', 'WebName'],
+    'response'        => ['response@host.com', 'WebName'],
+    'spool'           => true,
+    'spool_directory' => __DIR__ . '/spool'
+];
+
+// SWIFTHANDLER
+$handler = new SwiftMailerHandler($config);
+// PHPMAILER HANDLER
+$handler = new PhpMailerHandler($config);
+
+$mail = Mail::getInstance();
+$mail->setHandler($handler);
+
 ```
 
 ##  Send Mails
+```php
+
+$mail->subject('subject')->to('email@to.com')->body('message body');
+$mail->AddAttachment(__DIR__ . '/i.jpg', 'imagen.jpg');
+$mail->AddAttachment("http://blog.caranddriver.com/wp-content/uploads/2015/11/BMW-2-series.jpg", 'car.jpg');
+$mail->send();
+
 ```
-Mail::from('emailsender@myhost.com', 'My Host')
-    ->response('responsemail@myhost.com', 'My Host')
-    ->to('emailreciver@gmail.com')
-    ->subject('Subject mail')
-    ->body('<h1>Mail message</h1>')
-    ->tobcc(['email1@example.com', 'email2@example.com'])
-    ->AddAttachment(__DIR__.'/i.jpg', 'imagen.jpg')
-    ->send();
+
+## Send Mails with swiftmailer spool
+This code save mails on queue.
+```php
+
+$mail->subject('subject')->to('email@to.com')->body('message body');
+$mail->AddAttachment(__DIR__ . '/i.jpg', 'imagen.jpg');
+$mail->AddAttachment("http://blog.caranddriver.com/wp-content/uploads/2015/11/BMW-2-series.jpg", 'car.jpg');
+$mail->send(false);
+
+```
+
+## Send mails queue
+```php
+
+$handler->sendSpooledMessages($messageLimit = 100, $timeLimit = 60);
+
 ```
 
 ## Multiple sends
 
-```
+```php
 $mails = [
     'email1@example.com',
     'email2@example.com',
     'email3@example.com'
 ];
 
-Mail::subject('subject mail')->body('message body');
+$mail->subject('subject')->body('message body');
 
 foreach($mails as $mail){
-    Mail::to($mail)->send();
+    $mail->to($mail)->send();
 }
 ```
