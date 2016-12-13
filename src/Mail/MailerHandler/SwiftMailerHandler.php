@@ -93,7 +93,7 @@ class SwiftMailerHandler implements MailHandlerInterface
      */
     public function body($body)
     {
-        $this->message->setBody($body);
+        $this->message->setBody($body, 'text/html');
         return $this;
     }
 
